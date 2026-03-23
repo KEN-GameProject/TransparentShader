@@ -3,7 +3,7 @@ Shader "Custom/Dithering"
     Properties
     {
         _DiscardScale("Discard Scale", Range(1, 10)) = 1 // ドットの大きさ
-        _Discard("Discard", Range(0, 100)) = 50 // ディザリング ディスカード値
+        _Distance("Distance", Range(1.25, 2)) = 2 // ディザリング ディスカード値
     }
 
     SubShader
@@ -33,7 +33,7 @@ Shader "Custom/Dithering"
 
             CBUFFER_START(UnityPerMaterial)
                 int _DiscardScale;
-                int _Discard;
+                float _Distance;
             CBUFFER_END
 
             // bayer配列
@@ -60,7 +60,11 @@ Shader "Custom/Dithering"
                 int y = (int)fmod(IN.positionHCS.y / _DiscardScale, 4);
 
                 int dither = pattern[x][y] * 4;
-                clip(dither - _Discard);
+                // distance: 2(0) ~ 1.25(61)
+                float distance = clamp(_Distance, 1.25, 2); // 距離の正規化
+                float value = 1 - (distance - 1.25) / (2 - 1.25); // [0 - 1]の範囲へ
+                float discardValue = 61 * value;
+                clip(dither - discardValue);
 
                 half4 color = 1;
                 return color;
